@@ -26,9 +26,6 @@ public:
     oving1(int lower, int higher, int number_of_threads);
 
     void generate_prime() {
-        list<int> interval_list = list<int>();
-        mutex interval_list_mutex;
-
         list<int> prime_list;
         mutex prime_list_mutex;
 
@@ -36,52 +33,33 @@ public:
         mutex found_list_mutex;
 
         vector<thread> threads;
-        
-        for (size_t i = lower; i < higher; i++)
-        {
-            interval_list.push_back(i);
-        }
 
-        int interval_length = interval_list.size();
+        int interval_length = higher - lower;
         int const range_length = interval_length / number_of_threads;
+        cout << range_length << endl;
         
-        int start = 0; 
-        int end = 0;
-        for (size_t i = 0; i < this->number_of_threads; i++)
+        int start = this->lower; 
+        int end = start;
+        for (size_t i = 1; i < this->number_of_threads + 1; i++)
         {
             start = end;
-            int end = (i == number_of_threads - 1) ? interval_length : start + range_length;
+            end = (i == number_of_threads) ? this->higher : start + range_length;
+            cout << "start og slutt for thread " << i << ": " << start << " " << end << endl;
             
-            threads.emplace_back([&interval_list, &interval_list_mutex, 
-            &prime_list, &prime_list_mutex, 
+            threads.emplace_back([&prime_list, &prime_list_mutex, 
             &found_list, &found_list_mutex, 
             i, this, start, end] {
                 try 
                 {
-                    bool even = (i % 2 == 0);
-                    while (interval_list.size() > 0)
+                    cout << "Thread " << i << " started " << endl;
+                    for (size_t j = start; j < end; j++)
                     {
-                        cout << "Thread " << i << " started, size: " << interval_list.size() << endl;
-                        unique_lock<mutex> lock(interval_list_mutex);
-                        int element;
-                        if (interval_list.size() > 0) {
-                            if (even) {
-                                element = interval_list.front();
-                                interval_list.pop_front();
-                            } else {
-                                element = interval_list.back();
-                                interval_list.pop_back();
-                            }
-                            lock.unlock();
-                        } else {
-                            break;
-                        }
-
+                        cout << "Thread " << i << " checking : " << j << endl;
                         bool inPrime = false;
 
                         for (auto a : prime_list) 
                         {
-                            if (element % a == 0) 
+                            if (j % a == 0) 
                             {
                                 inPrime = true;
                             }
@@ -90,9 +68,9 @@ public:
                         if (!inPrime) 
                         {
                             bool isPrime = true;
-                            for (size_t i = 2; i < element; i++)
+                            for (size_t i = 2; i < j; i++)
                             {
-                                if (element % i == 0) {
+                                if (j % i == 0) {
                                     isPrime = false;
                                     unique_lock<mutex> lock(prime_list_mutex);
                                     prime_list.push_back(i);
@@ -100,17 +78,19 @@ public:
                                     
                                     if ((this->lower <= i) & ( i < this->higher)) {
                                         unique_lock<mutex> lock(found_list_mutex);
-                                        found_list.push_front(i);
+                                        bool found = (find(found_list.begin(), found_list.end(), i) != found_list.end());
+                                        if (!found) {
+                                             found_list.push_front(i);
+                                        }
                                         lock.unlock();
                                     }
-
                                     break;
                                 }
                             }
                             
                             if (isPrime) {
                                 unique_lock<mutex> lock(found_list_mutex);
-                                found_list.push_back(element);
+                                found_list.push_back(j);
                                 lock.unlock();
 
                             }
@@ -141,9 +121,6 @@ public:
         {
             cout << value << endl;
         };
-        
-        
-        
     }
 
     ~oving1();
@@ -155,7 +132,6 @@ oving1::oving1(int lower, int higher, int number_of_threads)
     this->higher = higher;
     this->number_of_threads = number_of_threads;
     this->prime_list = list<int>();
-    cout << this->lower << endl;
 }
 
 oving1::~oving1()
@@ -169,7 +145,7 @@ oving1::~oving1()
 int main() {
     int lower = 2;
     int upper = 100;
-    int number_of_threads = 2;
+    int number_of_threads = 4;
     list<int> prime_list;
 
 
