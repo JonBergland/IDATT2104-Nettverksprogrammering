@@ -2,8 +2,9 @@
 #include <mutex>
 #include <list>
 #include <thread>
-#include<algorithm>
-#include<vector>
+#include <algorithm>
+#include <vector>
+#include <bits/stdc++.h>
 
 
 using namespace std;
@@ -44,12 +45,20 @@ public:
         int interval_length = interval_list.size();
         int const range_length = interval_length / number_of_threads;
         
+        int start = 0; 
+        int end = 0;
         for (size_t i = 0; i < this->number_of_threads; i++)
         {
-            bool even = (i % 2 == 0);
-            threads.emplace_back([&interval_list, &interval_list_mutex, &prime_list, &prime_list_mutex, &found_list, &found_list_mutex, &even, &i] {
+            start = end;
+            int end = (i == number_of_threads - 1) ? interval_length : start + range_length;
+            
+            threads.emplace_back([&interval_list, &interval_list_mutex, 
+            &prime_list, &prime_list_mutex, 
+            &found_list, &found_list_mutex, 
+            i, this, start, end] {
                 try 
                 {
+                    bool even = (i % 2 == 0);
                     while (interval_list.size() > 0)
                     {
                         cout << "Thread " << i << " started, size: " << interval_list.size() << endl;
@@ -88,6 +97,13 @@ public:
                                     unique_lock<mutex> lock(prime_list_mutex);
                                     prime_list.push_back(i);
                                     lock.unlock();
+                                    
+                                    if ((this->lower <= i) & ( i < this->higher)) {
+                                        unique_lock<mutex> lock(found_list_mutex);
+                                        found_list.push_front(i);
+                                        lock.unlock();
+                                    }
+
                                     break;
                                 }
                             }
@@ -118,6 +134,8 @@ public:
                 t.join();
             }
         }
+
+        found_list.sort();
 
         for (auto value : found_list)
         {
@@ -150,7 +168,7 @@ oving1::~oving1()
 
 int main() {
     int lower = 2;
-    int upper = 10;
+    int upper = 100;
     int number_of_threads = 2;
     list<int> prime_list;
 
