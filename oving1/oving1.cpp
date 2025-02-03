@@ -138,16 +138,10 @@ oving1::~oving1()
 {
 }
 
-
-
-
-
 int main() {
     int lower = 2;
     int upper = 100;
     int number_of_threads = 4;
-    list<int> prime_list;
-
 
     oving1 oving(lower, upper, number_of_threads);
 
