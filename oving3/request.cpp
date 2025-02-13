@@ -3,6 +3,7 @@
 #include<fstream>
 #include<sstream>
 #include<iostream>
+#include <algorithm>
 
 using namespace std;
 
@@ -19,26 +20,31 @@ public:
 
 
 void HttpRequest::parseRequest(const string& rawRequest){
+    string request = rawRequest;
+    request.erase(remove(request.begin(), request.end(), '\r'), request.end());
+    cout << "Parsing request: " << request << endl;
     int currindex=0;
-    while(currindex < rawRequest.length()){
+    while(currindex < request.length()){
         if(rawRequest[currindex] == ' '){
             break;
         }
-        method += rawRequest[currindex];
+        method += request[currindex];
         currindex++;
     }
     // cout<<method<<endl;
+    cout << "Parsed method: " << method << endl;
     headers["method"] = method;
 
     currindex++;
-    while(currindex < rawRequest.length()){
-        if(rawRequest[currindex] == ' '){
+    while(currindex < request.length()){
+        if(request[currindex] == ' '){
             break;
         }
-        path += rawRequest[currindex];
+        path += request[currindex];
         currindex++;
     }
    
+    cout << "Parsed path: " << path << endl;
     headers["path"] = path;
     
 }
@@ -46,16 +52,16 @@ void HttpRequest::parseRequest(const string& rawRequest){
 string HttpRequest::readHtmlFile(const string &path){
     if (path == "/") {
         this->path = "/main_page.html";
-    } else if (path == "/page1")
-    {
+    } else if (path == "/page1") {
         this->path = "/page1.html";
-    } else if (path == "/page2")
-    {
+    } else if (path == "/page2") {
         this->path = "/page2.html";
+    } else {
+        this->path = path;
     }
     
 
-    string filename = path.substr(1,path.length());
+    string filename = this->path.substr(1,path.length());
 
    
     ifstream file(filename);
@@ -83,7 +89,13 @@ string HttpRequest::getMimeType(const string &path){
         {"jpg","image/jpeg"},
         {"png","image/png"}
     };
-    string fileExtension = path.substr(path.find_last_of(".") + 1);
+
+    size_t pos = path.find_last_of('.');
+    if (pos == string::npos || pos + 1 >= path.size()) {
+        // default to HTML if no extension
+        return "text/html";
+    }
+    string fileExtension = path.substr(pos + 1);
     // cout<<fileExtension<<endl;
     return mimeTypes[fileExtension];
 }
