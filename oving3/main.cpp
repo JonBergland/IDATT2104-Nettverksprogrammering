@@ -1,7 +1,7 @@
 #include"server.cpp"
 #include <string.h>
 #include <unistd.h>
-#include"request.cpp"
+#include"request_HTTP.cpp"
 #include"response.cpp"
 #include<thread>
 
@@ -58,9 +58,33 @@ void handleClient(int client_socket_fd){
     }
     //close client socket.
     closesocket(client_socket_fd);
+}
+
+void handleUdpClient(int udp_socket_fd) {
+    char udp_req_buffer[1024];
+    struct sockaddr_in client_addr;
+    socklen_t client_addr_len = sizeof(client_addr);
+
+    // Receive UDP packet
+    int bytes_received = recvfrom(udp_socket_fd, udp_req_buffer, sizeof(udp_req_buffer) - 1, 0, (struct sockaddr*)&client_addr, &client_addr_len);
+    if (bytes_received < 0) {
+        cerr << "Failed to receive UDP packet" << endl;
+        return;
+    }
+    udp_req_buffer[bytes_received] = '\0';
+
+    cout << "Received UDP packet: " << udp_req_buffer << endl;
+
+    // Process the UDP packet (e.g., send a response)
+    string response = "UDP packet received";
+    int bytes_sent = sendto(udp_socket_fd, response.c_str(), response.length(), 0, (struct sockaddr*)&client_addr, client_addr_len);
+    if (bytes_sent < 0) {
+        cerr << "Failed to send UDP response" << endl;
+    }
 
 }
-int main(int argc, char* argv[]){
+
+void startTCP(int argc, char* argv[]) {
     Server server = Server(argv[1]);
     struct sockaddr_in client_addr;
     socklen_t client_addr_size;
@@ -81,9 +105,36 @@ int main(int argc, char* argv[]){
         // Create a new thread to handle the client
         thread clientThread(handleClient, client_socket_fd);
         clientThread.detach(); // Detach the thread to allow it to run independently
-       
-
     }
+
+}
+
+void startUDP(int argc, char* argv[]) {
+    Server server = Server(argv[1]);
+    int udp_socket_fd = server.start_udp();
+
+    // while(1){
+    //     // Create a new thread to handle the client
+    //     thread clientThread(handleUdpClient, udp_socket_fd);
+    //     clientThread.detach(); // Detach the thread to allow it to run independently
+    // }
+    while (1) {
+        handleUdpClient(udp_socket_fd);
+    }
+}
+ 
+int main(int argc, char* argv[]){
+    if (argc < 2) {
+        cerr << "Usage: " << argv[0] << " <port>" << endl;
+        return 1;
+    }
+
+    // Start TCP service in a separate thread
+    thread tcpThread(startTCP, argc, argv);
+    tcpThread.detach();
+
+    // Start UDP service in the main thread
+    startUDP(argc, argv);
 
     return 0;
 }

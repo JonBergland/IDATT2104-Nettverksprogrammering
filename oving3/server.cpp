@@ -2,6 +2,8 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <iostream>
+#include <asio.hpp>
+#include <asio/ssl.hpp>
 #pragma comment(lib, "ws2_32.lib")
 using namespace std;
 
@@ -26,7 +28,8 @@ public:
 
         if(server_socket_fd < 0) {
             cerr << "Failed to create server socket" << endl;
-            exit(1);
+            WSACleanup();
+            return -1;
         }
 
         // Configuring the server socket
@@ -36,16 +39,54 @@ public:
 
         if(bind(server_socket_fd, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
             cerr << "Failed to bind server socket" << endl;
-            exit(1);
+            closesocket(server_socket_fd);
+            WSACleanup();
+            return -1;
         }
 
         if(listen(server_socket_fd, 5) < 0) {
             cerr << "Failed to listen on server socket" << endl;
-            exit(1);
+            closesocket(server_socket_fd);
+            WSACleanup();
+            return -1;
         }
 
         cerr << "Server started on port : " << port << endl;
         return server_socket_fd;
+    }
+
+    int start_udp() {
+        // Initialize Winsock 
+        WSADATA wsaData;
+        int result = WSAStartup(MAKEWORD(2, 2), &wsaData);
+        if (result != 0) {
+            cerr << "WSAStartup failed: " << result << endl;
+            return -1;
+        }
+
+        // Create a UDP socket
+        int udp_socket_fd = socket(AF_INET, SOCK_DGRAM, 0);
+        if (udp_socket_fd < 0) {
+            cerr << "Failed to create UDP socket" << endl;
+            WSACleanup();
+            return -1;
+        }
+
+        // Bind the UDP socket to the same port as the TCP server
+        struct sockaddr_in udp_server_addr;
+        udp_server_addr.sin_family = AF_INET;
+        udp_server_addr.sin_port = htons(stoi(port));
+        udp_server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+
+        if (bind(udp_socket_fd, (struct sockaddr*)&udp_server_addr, sizeof(udp_server_addr)) < 0) {
+            cerr << "Failed to bind UDP socket" << endl;
+            closesocket(udp_socket_fd);
+            WSACleanup();
+            return -1;
+        }
+
+        cout << "UDP server started on port : " << port << endl;
+        return udp_socket_fd;
     }
 
 
@@ -59,6 +100,7 @@ Server::Server(string port)
 
 Server::~Server()
 {
+    WSACleanup();
 }
 
 // int main() {
