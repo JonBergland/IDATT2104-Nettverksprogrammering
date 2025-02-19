@@ -11,7 +11,11 @@ class Server
 {
 public:
     string port;
+    asio::io_context io_context;
+    asio::ssl::context ssl_context;
+
     Server(string port);
+
     int start() {
         // Initialize Winsock 
         WSADATA wsaData;
@@ -89,13 +93,31 @@ public:
         return udp_socket_fd;
     }
 
+    asio::ip::tcp::acceptor start_tls() {
+        try {
+            // Create TCP acceptor
+            asio::ip::tcp::acceptor acceptor(this->io_context, asio::ip::tcp::endpoint(asio::ip::tcp::v4(), stoi(port)));
+            return acceptor;
+
+        } catch (std::exception& e) {
+            cerr << "Exception: " << e.what() << endl;
+            throw;
+        }
+    }
+
 
     ~Server();
 };
 
 Server::Server(string port)
+    : port(port), ssl_context(asio::ssl::context::tlsv12_server)
 {
-    this->port = port;
+    ssl_context.set_options(
+        asio::ssl::context::default_workarounds |
+        asio::ssl::context::no_sslv2 |
+        asio::ssl::context::single_dh_use);
+    ssl_context.use_certificate_chain_file("server_chain.crt");
+    ssl_context.use_private_key_file("server.key", asio::ssl::context::pem);
 }
 
 Server::~Server()

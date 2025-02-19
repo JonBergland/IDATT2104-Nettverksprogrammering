@@ -2,11 +2,14 @@
 #include <string.h>
 #include <unistd.h>
 #include"request_HTTP.cpp"
+#include "request_HTTPS.cpp"
 #include"response.cpp"
 #include<thread>
 #include <vector>
 #include <sstream>
 #include <numeric>
+#include <asio.hpp>
+#include <asio/ssl.hpp>
 
 using namespace std;
 
@@ -15,7 +18,7 @@ void logServingFile(const string& path, const string& mimetype) {
     cout << "Serving file: " << path << " with MIME type: " << mimetype << endl;
 }
 
-void handleClient(int client_socket_fd){
+void handleTCPClient(int client_socket_fd){
     cout << "Client socket: " << client_socket_fd << endl;
     char client_req_buffer[1024]; 
     //handle client request.
@@ -146,7 +149,7 @@ void startTCP(int argc, char* argv[]) {
         }
        
         // Create a new thread to handle the client
-        thread clientThread(handleClient, client_socket_fd);
+        thread clientThread(handleTCPClient, client_socket_fd);
         clientThread.detach(); // Detach the thread to allow it to run independently
     }
 
@@ -165,6 +168,76 @@ void startUDP(int argc, char* argv[]) {
         handleUdpClient(udp_socket_fd);
     }
 }
+
+void handleTLSClient(asio::ssl::stream<asio::ip::tcp::socket> ssl_stream) {
+    try {
+        // Perform SSL handshake
+        ssl_stream.handshake(asio::ssl::stream_base::server);
+
+        // Read request
+        char request[1024];
+        size_t request_length = ssl_stream.read_some(asio::buffer(request));
+        cout << "Received request: " << string(request, request_length) << endl;
+
+        request[request_length] = '\0';
+        
+        HttpRequest req = HttpRequest();
+        req.parseRequest(request);
+    
+        if (req.method.empty() || req.path.empty()) {
+            cerr << "Failed to parse request: method or path is empty" << endl;
+            ssl_stream.shutdown();
+            return;
+        }
+    
+        string mimetype = req.getMimeType(req.path);
+        cout << req.path << endl;
+    
+        HttpResponse res= HttpResponse();
+        
+        string body = req.readHtmlFile(req.path);
+        string response = res.frameHttpResponse("200","OK",req.headers,body,mimetype);
+        logServingFile(req.path, mimetype);
+    
+        // // Write to client.
+        // int bytes_sent = send(client_socket_fd, response.c_str(), response.length(), 0);
+        // if (bytes_sent < 0) {
+        //     cerr << "Failed to send response to client" << endl;
+        // }
+
+        // Write response
+        // string response = "HTTP/1.1 200 OK\r\nContent-Length: 13\r\n\r\nHello, TLS!";
+        asio::write(ssl_stream, asio::buffer(response));
+    } catch (std::exception& e) {
+        cerr << "Exception in handleTLSClient: " << e.what() << endl;
+    }
+}
+
+void startTLS(int argc, char* argv[]) {
+    try {
+        Server server = Server(argv[1]);
+
+        // Create TCP acceptor
+        asio::ip::tcp::acceptor acceptor = server.start_tls();
+        
+        // Start accepting connections
+        for (;;) {
+            asio::ip::tcp::socket socket(server.io_context);
+            acceptor.accept(socket);
+
+            // Create SSL stream
+            asio::ssl::stream<asio::ip::tcp::socket> ssl_stream(std::move(socket), server.ssl_context);
+
+            // Create a new thread to handle the client
+            thread clientThread(handleTLSClient, std::move(ssl_stream));
+            clientThread.detach(); // Detach the thread to allow it to run independently
+
+        }
+
+    } catch (std::exception& e) {
+        cerr << "Exception in startTLS: " << e.what() << endl;
+    }
+}
  
 int main(int argc, char* argv[]){
     if (argc < 2) {
@@ -173,11 +246,15 @@ int main(int argc, char* argv[]){
     }
 
     // Start TCP service in a separate thread
-    thread tcpThread(startTCP, argc, argv);
-    tcpThread.detach();
+    // thread tcpThread(startTCP, argc, argv);
+    // tcpThread.detach();
 
-    // Start UDP service in the main thread
-    startUDP(argc, argv);
+    // Start UDP service in a separate thread
+    // thread udpThread(startUDP, argc, argv);
+    // udpThread.detach();
+
+    // Start TLS service in the main thread
+    startTLS(argc, argv);
 
     return 0;
 }
