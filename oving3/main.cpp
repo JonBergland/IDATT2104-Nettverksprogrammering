@@ -4,6 +4,9 @@
 #include"request_HTTP.cpp"
 #include"response.cpp"
 #include<thread>
+#include <vector>
+#include <sstream>
+#include <numeric>
 
 using namespace std;
 
@@ -60,6 +63,45 @@ void handleClient(int client_socket_fd){
     closesocket(client_socket_fd);
 }
 
+int processUdpMessage(const string& message) {
+    // Process the message expected to be two vectors in the format "[X,X] [Y,Y]"
+    vector<int> vector1, vector2;
+    stringstream ss(message);
+    string segment;
+
+    // Parse the first vector
+    if (getline(ss, segment, ' ')) {
+        stringstream vectorStream(segment.substr(1, segment.size() - 2)); // Remove the brackets
+        string number;
+        while (getline(vectorStream, number, ',')) {
+            vector1.push_back(stoi(number));
+        }
+    }
+
+    // Parse the second vector
+    if (getline(ss, segment, ' ')) {
+        stringstream vectorStream(segment.substr(1, segment.size() - 2)); // Remove the brackets
+        string number;
+        while (getline(vectorStream, number, ',')) {
+            vector2.push_back(stoi(number));
+        }
+    }
+
+    cout << "Vector 1: ";
+    for (int num : vector1) {
+        cout << num << " ";
+    }
+    cout << endl;
+
+    cout << "Vector 2: ";
+    for (int num : vector2) {
+        cout << num << " ";
+    }
+    cout << endl;
+
+    return inner_product(vector1.begin(), vector1.end(), vector2.begin(), 0);
+}
+
 void handleUdpClient(int udp_socket_fd) {
     char udp_req_buffer[1024];
     struct sockaddr_in client_addr;
@@ -75,13 +117,14 @@ void handleUdpClient(int udp_socket_fd) {
 
     cout << "Received UDP packet: " << udp_req_buffer << endl;
 
+    int vector_product = processUdpMessage(udp_req_buffer);
+
     // Process the UDP packet (e.g., send a response)
-    string response = "UDP packet received";
+    string response = "UDP packet received. Result is " + to_string(vector_product);
     int bytes_sent = sendto(udp_socket_fd, response.c_str(), response.length(), 0, (struct sockaddr*)&client_addr, client_addr_len);
     if (bytes_sent < 0) {
         cerr << "Failed to send UDP response" << endl;
     }
-
 }
 
 void startTCP(int argc, char* argv[]) {
