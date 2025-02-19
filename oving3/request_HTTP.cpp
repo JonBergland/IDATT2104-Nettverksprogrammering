@@ -51,17 +51,15 @@ void HttpRequest::parseRequest(const string& rawRequest){
 
 string HttpRequest::readHtmlFile(const string &path){
     if (path == "/") {
-        this->path = "/main_page.html";
+        this->path = "html_files/main_page.html";
     } else if (path == "/page1") {
-        this->path = "/page1.html";
+        this->path = "html_files/page1.html";
     } else if (path == "/page2") {
-        this->path = "/page2.html";
+        this->path = "html_files/page2.html";
     } else {
         this->path = path;
     }
-    
-
-    string filename = this->path.substr(1,path.length());
+    string filename = this->path;
 
    
     ifstream file(filename);
