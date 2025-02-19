@@ -7,7 +7,7 @@
 
 using namespace std;
 
-class HttpRequest{
+class HttpsRequest{
 public:
     string method;
     string path;
@@ -19,7 +19,7 @@ public:
 };
 
 
-void HttpRequest::parseRequest(const string& rawRequest){
+void HttpsRequest::parseRequest(const string& rawRequest){
     string request = rawRequest;
     request.erase(remove(request.begin(), request.end(), '\r'), request.end());
     cout << "Parsing request: " << request << endl;
@@ -49,7 +49,7 @@ void HttpRequest::parseRequest(const string& rawRequest){
     
 }
 
-string HttpRequest::readHtmlFile(const string &path){
+string HttpsRequest::readHtmlFile(const string &path){
     if (path == "/") {
         this->path = "html_files/main_page.html";
     } else if (path == "/page1") {
@@ -80,7 +80,7 @@ string HttpRequest::readHtmlFile(const string &path){
     return "";
 }
 
-string HttpRequest::getMimeType(const string &path){
+string HttpsRequest::getMimeType(const string &path){
     map<string, string> mimeTypes = {
         {"html","text/html"},
         {"css","text/css"},
@@ -100,7 +100,7 @@ string HttpRequest::getMimeType(const string &path){
 }
 
 // int main() {
-//     HttpRequest request;
+//     HttpsRequest request;
 
 //     // Example raw HTTP request
 //     string rawRequest = "GET / HTTP/1.1\r\nHost: localhost\r\n\r\n";
