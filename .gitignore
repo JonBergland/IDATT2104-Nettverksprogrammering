@@ -6,6 +6,9 @@
 *.lo
 *.o
 *.obj
+*.csr
+*.crt
+*.key
 
 # Precompiled Headers
 *.gch
@@ -33,3 +36,6 @@
 
 # Visual Studio Code
 .vscode/*
+
+# Files to ignore:
+
