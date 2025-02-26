@@ -250,8 +250,8 @@ int main(int argc, char* argv[]){
     // tcpThread.detach();
 
     // Start UDP service in a separate thread
-    // thread udpThread(startUDP, argc, argv);
-    // udpThread.detach();
+    //thread udpThread(startUDP, argc, argv);
+    //udpThread.detach();
 
     // Start TLS service in the main thread
     startTLS(argc, argv);
