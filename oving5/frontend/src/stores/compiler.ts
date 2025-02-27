@@ -1,18 +1,22 @@
+import axiosInstance from '../plugins/axios'
 
 
+export async function compileCode(code:string): Promise<String> {
+  console.log("Compiling code");
 
-export function compileCode(code:string) {
 
-  const code1 = "print(\"Hello World\")"
+  // const code1 = "print('Hello World')"
 
-  const command = 'docker run --rm python-image python3 -c ' + code1
+  // const command = 'docker run --rm python-image python3 -c ' + code1
 
-  const result = executeCommand(command, (output: string) => {
-    console.log(output);
-  }, (error: string) => {
-    console.error(error);
-  });
+  try {
+    const response = await axiosInstance.post("/compile", code)
+    console.log(response.data)
 
-  return result;
+    return response.data
 
+  } catch (error) {
+    console.log("Error compiling the code ", error)
+    return JSON.stringify(error)
+  }
 };

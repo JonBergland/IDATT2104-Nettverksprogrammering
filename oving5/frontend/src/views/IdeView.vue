@@ -8,11 +8,12 @@ async function sendCode() {
   const code = document.querySelector('#ide-area') as HTMLTextAreaElement
 
   const output = document.querySelector('#output') as HTMLParagraphElement
+  output.innerHTML = "Output:<br>"
 
   const codeText = code.value;
   console.log(codeText);
 
-  const solvedCode = compileCode(codeText)
+  const solvedCode = await compileCode(codeText)
 
   output.innerHTML += solvedCode + '<br>'
 
@@ -22,7 +23,7 @@ async function sendCode() {
 
 <template>
   <div>
-    <h3>IDE</h3>
+    <h3>IDE for Python</h3>
     <textarea
       name="ide"
       id="ide-area"
