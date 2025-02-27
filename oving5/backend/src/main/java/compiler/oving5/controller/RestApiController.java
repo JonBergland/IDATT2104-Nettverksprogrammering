@@ -28,7 +28,8 @@ public class RestApiController {
     public ResponseEntity<String> processCode(@RequestBody String input) {
         try {
             CodeCompiler compiler = new CodeCompiler();
-            String result = compiler.compileCode(input);
+            String result = compiler.runPythonCode(input);
+            logger.info("Code compiled: {}", result);
 
             return ResponseEntity.ok(result);
             

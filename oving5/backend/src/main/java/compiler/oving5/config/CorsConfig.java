@@ -1,4 +1,4 @@
-package fullstack.assignment;
+package compiler.oving5.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
