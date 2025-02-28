@@ -8,23 +8,17 @@ import org.slf4j.LoggerFactory;
 public class CodeCompiler {
     private static final Logger logger = LoggerFactory.getLogger(CodeCompiler.class);
 
-    public String compileCode(String code) {
-        try {
-            return code;
-            
-        } catch (Exception e) {
-            logger.error(code, e);
-            throw e;
-        }
-    }
-
     public String runPythonCode(String code) {
         try {
             logger.info("Code received: {}",code);
 
+            String escapedCode = code.replace("\\n", ";").replace(":;", ":");
+
+            logger.info("Escaped code: {}",code);
+
             ProcessBuilder pb = new ProcessBuilder(
                 "docker", "run", "--rm",
-                "python-image", "python3", "-c", code);
+                "python-image", "python3", "-c", escapedCode);
 
             Process process = pb.start();
 
@@ -34,8 +28,9 @@ public class CodeCompiler {
             String output = "";
             while ((line = reader.readLine()) != null) {
                 logger.info(line);
-                output += line + '\n';
+                output += line + "<br>";
             }
+
 
             String errorOutput = "";
             while ((line = errorReader.readLine()) != null) {
