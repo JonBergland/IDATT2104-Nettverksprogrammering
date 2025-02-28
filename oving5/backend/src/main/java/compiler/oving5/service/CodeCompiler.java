@@ -21,17 +21,10 @@ public class CodeCompiler {
     public String runPythonCode(String code) {
         try {
             logger.info("Code received: {}",code);
-            // String escapedCode = code.replace("\n", "\\n");
-
-            File tempFile = File.createTempFile("code", ".py");
-            try (BufferedWriter writer = new BufferedWriter(new FileWriter(tempFile))) {
-                writer.write(code);
-            }
 
             ProcessBuilder pb = new ProcessBuilder(
-                "docker", "run", "--rm", "-v",
-                tempFile.getAbsolutePath() + ":/tmp/code.py",
-                "python-image", "python3", "/tmp/code.py");
+                "docker", "run", "--rm",
+                "python-image", "python3", "-c", code);
 
             Process process = pb.start();
 
@@ -53,7 +46,7 @@ public class CodeCompiler {
             int exitCode = process.waitFor();
             System.out.println("Exited with code: " + exitCode + ", Error output: " + errorOutput);
             
-            tempFile.delete();
+            // tempFile.delete();
 
             if (exitCode != 0) {
                 return "Error: " + errorOutput;
